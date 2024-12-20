@@ -1,0 +1,179 @@
+#include <iostream>
+using namespace std;
+
+// Cấu trúc node trong cây AVL
+struct Node {
+    int giaTri;     
+    Node* trai;     
+    Node* phai;      
+    int chieuCao;    
+
+    
+    Node(int gt) {
+        giaTri = gt;
+        trai = nullptr;
+        phai = nullptr;
+        chieuCao = 1;  // Node lá có chiều cao là 1
+    }
+};
+
+class CayAVL {
+private:
+    Node* goc;
+
+    // Lấy chiều cao của một node
+    int layChieuCao(Node* node) {
+        if (node == nullptr) return 0;
+        return node->chieuCao;
+    }
+
+    // Lấy độ cân bằng của một node
+    int layDoCanBang(Node* node) {
+        if (node == nullptr) return 0;
+        return layChieuCao(node->trai) - layChieuCao(node->phai);
+    }
+
+    // Cập nhật chiều cao của một node
+    void capNhatChieuCao(Node* node) {
+        if (node == nullptr) return;
+        node->chieuCao = 1 + max(layChieuCao(node->trai), layChieuCao(node->phai));
+    }
+
+    // Xoay phải
+    Node* xoayPhai(Node* y) {
+        Node* x = y->trai;
+        Node* T2 = x->phai;
+
+        x->phai = y;
+        y->trai = T2;
+
+        // Cập nhật chiều cao
+        capNhatChieuCao(y);
+        capNhatChieuCao(x);
+
+        return x;
+    }
+
+    // Xoay trái
+    Node* xoayTrai(Node* x) {
+        Node* y = x->phai;
+        Node* T2 = y->trai;
+
+        y->trai = x;
+        x->phai = T2;
+
+        // Cập nhật chiều cao
+        capNhatChieuCao(x);
+        capNhatChieuCao(y);
+
+        return y;
+    }
+
+    // Hàm thêm node đệ quy
+    Node* themNodeDeQuy(Node* node, int giaTri) {
+        // 1. Thực hiện thêm BST bình thường
+        if (node == nullptr)
+            return new Node(giaTri);
+
+        if (giaTri < node->giaTri)
+            node->trai = themNodeDeQuy(node->trai, giaTri);
+        else if (giaTri > node->giaTri)
+            node->phai = themNodeDeQuy(node->phai, giaTri);
+        else // Không cho phép giá trị trùng
+            return node;
+
+        // 2. Cập nhật chiều cao của node cha
+        capNhatChieuCao(node);
+
+        // 3. Kiểm tra và cân bằng cây
+        int doCanBang = layDoCanBang(node);
+
+        // Trường hợp Trái-Trái
+        if (doCanBang > 1 && giaTri < node->trai->giaTri)
+            return xoayPhai(node);
+
+        // Trường hợp Phải-Phải
+        if (doCanBang < -1 && giaTri > node->phai->giaTri)
+            return xoayTrai(node);
+
+        // Trường hợp Trái-Phải
+        if (doCanBang > 1 && giaTri > node->trai->giaTri) {
+            node->trai = xoayTrai(node->trai);
+            return xoayPhai(node);
+        }
+
+        // Trường hợp Phải-Trái
+        if (doCanBang < -1 && giaTri < node->phai->giaTri) {
+            node->phai = xoayPhai(node->phai);
+            return xoayTrai(node);
+        }
+
+        return node;
+    }
+
+    // Duyệt cây theo thứ tự trước (NLR)
+    void duyetTruoc(Node* node) {
+        if (node != nullptr) {
+            cout << node->giaTri << "(" << layDoCanBang(node) << ") ";
+            duyetTruoc(node->trai);
+            duyetTruoc(node->phai);
+        }
+    }
+
+    // Duyệt cây theo thứ tự giữa (LNR)
+    void duyetGiua(Node* node) {
+        if (node != nullptr) {
+            duyetGiua(node->trai);
+            cout << node->giaTri << "(" << layDoCanBang(node) << ") ";
+            duyetGiua(node->phai);
+        }
+    }
+
+    // Duyệt cây theo thứ tự sau (LRN)
+    void duyetSau(Node* node) {
+        if (node != nullptr) {
+            duyetSau(node->trai);
+            duyetSau(node->phai);
+            cout << node->giaTri << "(" << layDoCanBang(node) << ") ";
+        }
+    }
+
+public:
+    // Khởi tạo cây rỗng
+    CayAVL() {
+        goc = nullptr;
+    }
+
+    // Thêm một node mới vào cây
+    void themNode(int giaTri) {
+        goc = themNodeDeQuy(goc, giaTri);
+    }
+
+    // In cây theo các thứ tự duyệt khác nhau
+    void inCay() {
+        cout << "\nDuyệt trước (NLR): ";
+        duyetTruoc(goc);
+        cout << "\nDuyệt giữa (LNR): ";
+        duyetGiua(goc);
+        cout << "\nDuyệt sau (LRN): ";
+        duyetSau(goc);
+        cout << endl;
+    }
+};
+
+int main() {
+    CayAVL cay;
+    
+    // Nhập các số vào cây
+    int dayso[] = {10, 20, 30, 40, 50, 25};
+    int n = sizeof(dayso)/sizeof(dayso[0]);
+    
+    cout << "Thêm các số vào cây AVL:" << endl;
+    for(int i = 0; i < n; i++) {
+        cout << "\nThêm " << dayso[i] << " vào cây:";
+        cay.themNode(dayso[i]);
+        cay.inCay();
+    }
+
+    return 0;
+}
